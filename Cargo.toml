@@ -7,4 +7,4 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-range_coder = {package="range_coder", git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less_without_freq_table"}
+range_coder = {package="range_coder", git="https://github.com/diegodox/range_coder_rust.git", branch="carryless"}
