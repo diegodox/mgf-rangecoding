@@ -1,5 +1,5 @@
 [package]
-name = "change here"
+name = "mgf_rangecoding"
 version = "0.1.0"
 authors = ["Diego Fujii <android.mxdiego9@gmail.com>"]
 edition = "2018"
@@ -7,3 +7,4 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+range_coder = {package="range_coder", git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less_without_freq_table"}
