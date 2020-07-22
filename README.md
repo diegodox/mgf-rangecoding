@@ -47,9 +47,7 @@ fn test() {
         w: 5.0,
         m: 70,
     };
-    let set = PDFSet {
-        pdf_list: vec![g1, g2, g3],
-    };
+    let set = PDFSet::new(vec![g1, g2, g3]);
     let pm = set.finalize();
     let mut encoder = Encoder::new();
     for i in &ansewr {
