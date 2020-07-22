@@ -42,7 +42,7 @@ impl<T: PDF> PDFSet<T> {
                 let tot_freq_src = cum_freq_src.last().unwrap() + freq_src.last().unwrap();
                 let mut cum_freq_tmp = 0;
                 for x in 0..=std::u8::MAX {
-                    let f = max * (freq_src[x as usize] / tot_freq_src) as u32 + 1;
+                    let f = (max as f64 * (freq_src[x as usize] / tot_freq_src)) as u32 + 1;
                     freq.push(f);
                     cum_freq.push(cum_freq_tmp);
                     cum_freq_tmp += f;
@@ -87,6 +87,14 @@ impl PModel for QuantizedPDFSet {
         left
     }
 }
+impl std::fmt::Debug for QuantizedPDFSet {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for i in 0..=std::u8::MAX {
+            println!("{:03}: {}", i, self.c_freq(i as usize));
+        }
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -106,9 +114,11 @@ mod tests {
                 * (-1.0
                     * self.w
                     * self.w
-                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64
-                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64
-                   ).exp()
+                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize))
+                        as f64
+                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize))
+                        as f64)
+                    .exp()
         }
     }
     #[test]
@@ -147,6 +157,7 @@ mod tests {
             decoded.push(decoder.decode_one_alphabet(&pm));
         }
         assert_eq!(ansewr, decoded);
+        println!("{:?}", pm);
     }
     #[test]
     fn large_pdf() {
