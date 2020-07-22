@@ -8,7 +8,10 @@ Provide PModel that is a set of PDF (probability density function) for range cod
 
 ```toml
 [dependencies]
+# this pmodel
 pdf_set = {git="https://github.com/diegodox/pdf-set.git"}
+# also we need rangecoder
+range_coder = {git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less_without_freq_table"}
 ```
 ## example
 
