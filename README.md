@@ -1,6 +1,6 @@
 # pdf-set
 
-Provide PModel that is a set of PDF (probability density function) for range coder
+Provide PModel for set of PDF (probability density function) for range coder
 
 ## installation
 
