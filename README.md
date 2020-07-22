@@ -8,9 +8,9 @@ Provide PModel for set of PDF (probability density function) for range coder
 
 ```toml
 [dependencies]
-# this crate provide range_coder's PModel.
+# this crate provides range_coder's PModel.
 pdf_set = {git="https://github.com/diegodox/pdf-set.git"}
-# also we need rangecoder provide Encoder/Decoder
+# also we need rangecoder provides Encoder/Decoder
 range_coder = {git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less_without_freq_table"}
 ```
 ## example
