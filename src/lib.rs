@@ -106,11 +106,9 @@ mod tests {
                 * (-1.0
                     * self.w
                     * self.w
-                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize))
-                        as f64
-                    * ((std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize))
-                        as f64))
-                    .exp()
+                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64
+                    * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64
+                   ).exp()
         }
     }
     #[test]
