@@ -1,6 +1,6 @@
 # pdf-set
 
-Provide PModel for set of PDF (probability density function) for range coder
+Provide PModel for set of PDF (probability density function) for [range coder](https://github.com/diegodox/range_coder_rust)
 
 ## installation
 
