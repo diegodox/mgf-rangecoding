@@ -11,7 +11,7 @@ Provide PModel for set of PDF (probability density function) for [range coder](h
 # this crate provides range_coder's PModel.
 pdf_set = {git="https://github.com/diegodox/pdf-set.git"}
 # also we need rangecoder provides Encoder/Decoder
-range_coder = {git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less_without_freq_table"}
+range_coder = {git="https://github.com/diegodox/range_coder_rust.git", branch="carry_less"}
 ```
 ## example
 
