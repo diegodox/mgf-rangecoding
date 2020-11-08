@@ -3,6 +3,8 @@
 //! トレイトPDFの集合: PDFSet  
 //! PDFSetを量子化した確率密度関数: QuantizedPDFSet  
 //! QuantizedPDFSetはRangeCoderのPModelを実装  
+
+pub use range_coder;
 use range_coder::decoder::Decoder;
 use range_coder::pmodel::PModel;
 /// a set of probability density functions.
@@ -17,38 +19,51 @@ impl<T: PDF> PDFSet<T> {
         self.pdf_list.push(pdf);
     }
     pub fn finalize(self) -> QuantizedPDFSet {
-        let mut freq_src = Vec::new();
-        let mut cum_freq_src = Vec::new();
-        {
-            // freq,cum_freqをf64で計算
-            let mut cum_freq_tmp = 0.0;
-            for x in 0..=std::u8::MAX {
-                let mut freq = 0.0;
-                for p in &self.pdf_list {
-                    freq += p.freq(x as usize);
-                }
-                freq_src.push(freq);
-                cum_freq_src.push(cum_freq_tmp);
-                cum_freq_tmp += freq;
-            }
-        }
+        const RANGE_MAX: usize = std::u8::MAX as usize;
+        const RANGE_SIZE: usize = RANGE_MAX + 1;
+        const RANGE: std::ops::RangeInclusive<usize> = 0..=RANGE_MAX;
+        let (freq_src, tot_freq_src) = {
+            let mut freq_src = Vec::with_capacity(RANGE_SIZE);
+            let tot_freq = RANGE
+                .into_iter()
+                // 確率質量関数の確率の合計を計算する
+                .map(|x| {
+                    self.pdf_list
+                        .iter()
+                        .map(|p| p.freq(x as usize))
+                        .sum::<f64>()
+                })
+                // 累積確率を計算する
+                .fold(0f64, |cum, freq| {
+                    // 頻度表に登録する
+                    freq_src.push(freq);
+                    cum + freq
+                });
+            (freq_src, tot_freq)
+        };
         // 量子化
-        let mut freq = Vec::new();
-        let mut cum_freq = Vec::new();
-        {
-            // 各値に底上げとして1ずつ割り振るので，maxから引いておく
-            let max = std::u32::MAX - (std::u8::MAX as u32 + 1);
-            {
-                let tot_freq_src = cum_freq_src.last().unwrap() + freq_src.last().unwrap();
-                let mut cum_freq_tmp = 0;
-                for x in 0..=std::u8::MAX {
-                    let f = (max as f64 * (freq_src[x as usize] / tot_freq_src)) as u32 + 1;
+        let (freq, cum_freq) = {
+            /// 各値に底上げとして1ずつ割り振るので，maxから引いておく
+            const MAX_TOT_FREQ: u32 = std::u32::MAX - (std::u8::MAX as u32 + 1);
+            let mut freq = Vec::with_capacity(RANGE_SIZE);
+            let mut cum_freq = Vec::with_capacity(RANGE_SIZE);
+            RANGE
+                .into_iter()
+                // 整数へ丸めた頻度を計算（1の底上げもする）
+                .map(|x| (MAX_TOT_FREQ as f64 * (freq_src[x as usize] / tot_freq_src)) as u32 + 1)
+                // 累積頻度の計算
+                .scan(0, |cum, freq| {
+                    let cum_clone = cum.clone();
+                    *cum += freq;
+                    Some((freq, cum_clone))
+                })
+                // 頻度表に登録
+                .for_each(|(f, cum)| {
                     freq.push(f);
-                    cum_freq.push(cum_freq_tmp);
-                    cum_freq_tmp += f;
-                }
-            }
-        }
+                    cum_freq.push(cum);
+                });
+            (freq, cum_freq)
+        };
         QuantizedPDFSet { freq, cum_freq }
     }
 }
@@ -95,13 +110,12 @@ impl std::fmt::Debug for QuantizedPDFSet {
         Ok(())
     }
 }
-
 #[cfg(test)]
 mod tests {
     use crate::PDFSet;
+    use crate::QuantizedPDFSet;
     use crate::PDF;
-    use range_coder::decoder::Decoder;
-    use range_coder::encoder::Encoder;
+    use range_coder::{decoder::Decoder, encoder::Encoder, pmodel::PModel};
     struct GaussianDist {
         h: f64,
         w: f64,
@@ -121,9 +135,7 @@ mod tests {
                     .exp()
         }
     }
-    #[test]
-    fn it_works() {
-        let ansewr = vec![34, 45, 128, 255, 0];
+    fn simple_pmodel() -> QuantizedPDFSet {
         let g1 = GaussianDist {
             h: 10.0,
             w: 5.0,
@@ -142,7 +154,33 @@ mod tests {
         let set = PDFSet {
             pdf_list: vec![g1, g2, g3],
         };
-        let pm = set.finalize();
+        set.finalize()
+    }
+    fn large_pmodel() -> QuantizedPDFSet {
+        let g1 = GaussianDist {
+            h: std::f64::MAX,
+            w: std::f64::MIN_POSITIVE,
+            m: 128,
+        };
+        let g2 = GaussianDist {
+            h: 10.0,
+            w: 2.0,
+            m: 30,
+        };
+        let g3 = GaussianDist {
+            h: 2.0,
+            w: 5.0,
+            m: 70,
+        };
+        let set = PDFSet {
+            pdf_list: vec![g1, g2, g3],
+        };
+        set.finalize()
+    }
+    #[test]
+    fn it_works() {
+        let ansewr = vec![34, 45, 128, 255, 0];
+        let pm = simple_pmodel();
         let mut encoder = Encoder::new();
         for i in &ansewr {
             encoder.encode(&pm, *i);
@@ -162,25 +200,7 @@ mod tests {
     #[test]
     fn large_pdf() {
         let ansewr = vec![34, 45, 128, 255, 0];
-        let g1 = GaussianDist {
-            h: std::f64::MAX,
-            w: std::f64::MIN_POSITIVE,
-            m: 128,
-        };
-        let g2 = GaussianDist {
-            h: 10.0,
-            w: 2.0,
-            m: 30,
-        };
-        let g3 = GaussianDist {
-            h: 2.0,
-            w: 5.0,
-            m: 70,
-        };
-        let set = PDFSet {
-            pdf_list: vec![g1, g2, g3],
-        };
-        let pm = set.finalize();
+        let pm = large_pmodel();
         let mut encoder = Encoder::new();
         for i in &ansewr {
             encoder.encode(&pm, *i);
@@ -195,5 +215,19 @@ mod tests {
             decoded.push(decoder.decode_one_alphabet(&pm));
         }
         assert_eq!(ansewr, decoded);
+    }
+    #[test]
+    fn use_full_range() {
+        let pm = large_pmodel();
+        assert!((std::u32::MAX as f64)
+            .mul_add(-0.9999999, pm.total_freq() as f64)
+            .is_sign_positive());
+    }
+    #[test]
+    fn use_full_range2() {
+        let pm = simple_pmodel();
+        assert!((std::u32::MAX as f64)
+            .mul_add(-0.9999999, pm.total_freq() as f64)
+            .is_sign_positive());
     }
 }
