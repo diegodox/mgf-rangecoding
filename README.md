@@ -23,14 +23,13 @@ struct GaussianDist {
 }
 impl PDF for GaussianDist {
     fn freq(&self, v: usize) -> f64 {
+        fn delta(a: usize, b: usize) -> usize {
+            if a > b { a - b } else { b - a }
+        }
+        let t = -1f64 * self.w.powi(2) * (delta(v , self.m as usize) as f64).powi(2);
         self.h
             * self.w
-            * (-1.0
-                * self.w
-                * self.w
-                * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64
-                * (std::cmp::max(v, self.m as usize) - std::cmp::min(v, self.m as usize)) as f64)
-                .exp()
+            * t.exp()
     }
 }
 fn test() {
